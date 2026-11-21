@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phishing Awareness Quiz - CodeAlpha Cyber Security Internship</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", Arial, sans-serif; background:#f4efec; color:#251f21; margin:0; padding:24px; }
+  .card { max-width:720px; margin:0 auto 20px; background:#fff; border-radius:12px; padding:24px 28px; box-shadow:0 2px 8px rgba(0,0,0,.06); }
+  h1 { font-size:24px; } h2 { font-size:17px; }
+  .q { border-top:1px solid #eae9ea; padding:16px 0; }
+  .q:first-of-type { border-top:none; }
+  label { display:block; padding:8px 10px; border-radius:8px; cursor:pointer; }
+  label:hover { background:#f4efec; }
+  button { background:#4a776b; color:#fff; border:none; padding:12px 28px; font-size:16px; border-radius:8px; cursor:pointer; }
+  .correct { background:#e4f0ec !important; outline:2px solid #73a89a; }
+  .wrong { background:#fdecec !important; outline:2px solid #c42430; }
+  .explain { display:none; font-size:14px; color:#585254; padding:6px 10px 0; }
+  #result { font-size:20px; font-weight:700; text-align:center; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Phishing Awareness Quiz</h1>
+  <p>Mahmoud Mohamed Sayed | CodeAlpha Cyber Security Internship</p>
+  <p>Answer all 8 questions, then press <b>Check my answers</b>. Immediate feedback appears under each question.</p>
+</div>
+<div class="card">
+<form id="quiz"></form>
+<button onclick="grade(event)">Check my answers</button>
+<p id="result"></p>
+</div>
+<script>
+const QUESTIONS = [
+  { q: "1. An email from support@micros0ft-help.com says your password expires today and gives a login link. What is the biggest red flag?",
+    a: ["The word 'today' in the message", "The lookalike sender domain", "The short subject line"],
+    correct: 1, explain: "micros0ft-help.com is not Microsoft's domain. Lookalike domains are the classic phishing tell." },
+  { q: "2. Your 'bank' calls and asks you to read out the OTP code you just received. What do you do?",
+    a: ["Read it out, it is the bank after all", "Ask them to confirm your account number first", "Hang up and call the bank on the number on your card"],
+    correct: 2, explain: "No real bank ever asks for an OTP. Verify through a channel you choose." },
+  { q: "3. True or false: a padlock icon in the browser means the site is safe and legitimate.",
+    a: ["True", "False"],
+    correct: 1, explain: "The padlock only means the connection is encrypted. Phishing sites use HTTPS too." },
+  { q: "4. You get an SMS about a package you never ordered, asking for a small 'customs fee'. Which is NOT a red flag?",
+    a: ["You never ordered a package", "The link uses an unusual domain", "The message arrived as an SMS", "It demands action within 24 hours"],
+    correct: 2, explain: "Arriving by SMS is normal; the unexpected package, strange domain and deadline are the red flags." },
+  { q: "5. You already entered your password on a suspicious page. What is the FIRST thing to do?",
+    a: ["Delete the email", "Change that password on the real site, and anywhere it is reused", "Restart the computer"],
+    correct: 1, explain: "Change the password immediately, then enable/reset 2FA and watch the account." },
+  { q: "6. Why does a password manager help against phishing?",
+    a: ["It blocks all phishing emails", "It will not autofill your password on a lookalike domain", "It makes passwords longer"],
+    correct: 1, explain: "A password manager matches the exact domain; on a fake domain it stays silent, warning you something is off." },
+  { q: "7. Which attachment should make you most suspicious?",
+    a: ["A PDF report you asked a colleague for", "An unexpected invoice.zip from an unknown sender", "A photo from a friend you were expecting"],
+    correct: 1, explain: "Unexpected archives and documents from unknown senders are a common malware delivery method." },
+  { q: "8. The single best habit against phishing is:",
+    a: ["Never opening email", "Verifying urgent messages through a channel you choose, not the one given", "Only checking email once a week"],
+    correct: 1, explain: "Urgency is the weapon. Verify through the official app or a number you looked up yourself." }
+];
+const form = document.getElementById('quiz');
+QUESTIONS.forEach((item, qi) => {
+  const div = document.createElement('div');
+  div.className = 'q';
+  div.innerHTML = '<h2>' + item.q + '</h2>' +
+    item.a.map((ans, ai) =>
+      '<label id="l' + qi + '_' + ai + '"><input type="radio" name="q' + qi + '" value="' + ai + '"> ' + ans + '</label>'
+    ).join('') +
+    '<p class="explain" id="e' + qi + '"></p>';
+  form.appendChild(div);
+});
+function grade(ev) {
+  ev.preventDefault();
+  let score = 0;
+  QUESTIONS.forEach((item, qi) => {
+    const picked = form.querySelector('input[name="q' + qi + '"]:checked');
+    const ex = document.getElementById('e' + qi);
+    ex.style.display = 'block';
+    ex.textContent = item.explain;
+    QUESTIONS.forEach(() => {});
+    for (let ai = 0; ai < item.a.length; ai++) {
+      document.getElementById('l' + qi + '_' + ai).className = '';
+    }
+    if (picked) {
+      const li = parseInt(picked.value, 10);
+      if (li === item.correct) { score++; document.getElementById('l' + qi + '_' + li).className = 'correct'; }
+      else {
+        document.getElementById('l' + qi + '_' + li).className = 'wrong';
+        document.getElementById('l' + qi + '_' + item.correct).className = 'correct';
+      }
+    } else {
+      document.getElementById('l' + qi + '_' + item.correct).className = 'correct';
+    }
+  });
+  document.getElementById('result').textContent = 'Your score: ' + score + ' / ' + QUESTIONS.length +
+    (score === QUESTIONS.length ? ' - perfect, you can spot the phish!' : score >= 6 ? ' - good, review the ones you missed.' : ' - review the training slides and try again.');
+}
+</script>
+</body>
+</html>
