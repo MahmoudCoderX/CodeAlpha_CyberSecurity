@@ -1,0 +1,93 @@
+#========================================================================
+# codealpha_ids.rules
+#
+# CodeAlpha Cyber Security Internship - Network Intrusion Detection System
+# Custom rule set for Snort 2.9+ (also loads in Suricata).
+#
+# Author: Bondok
+#
+# SID range 1000000-1999999 is reserved for local/custom rules.
+#
+# Expected variables (define in snort.conf / suricata.yaml):
+#   HOME_NET      -> the protected network, e.g. [192.168.1.0/24]
+#   EXTERNAL_NET  -> everything outside it, default !$HOME_NET
+#========================================================================
+
+#------------------------------------------------------------------------
+# 1. Reconnaissance: ICMP activity
+#------------------------------------------------------------------------
+
+# Any inbound echo request. Noisy on real networks; useful on a quiet
+# server segment where nobody should be pinging.
+alert icmp $EXTERNAL_NET any -> $HOME_NET any (msg:"NIDS: ICMP echo request (possible ping sweep)"; itype:8; classtype:icmp-event; sid:1000001; rev:1;)
+
+# Ping sweep: one host sending many echo requests in a short window.
+# detection_filter: only alert once 10 echo requests from the same source
+# are seen within 10 seconds.
+alert icmp $EXTERNAL_NET any -> $HOME_NET any (msg:"NIDS: ICMP ping sweep detected"; itype:8; detection_filter:track by_src, count 10, seconds 10; classtype:attempted-recon; sid:1000002; rev:1;)
+
+#------------------------------------------------------------------------
+# 2. Reconnaissance: TCP port scans
+#------------------------------------------------------------------------
+
+# Classic SYN ("half-open") scan: many SYN packets from one source in 5s.
+# Catches nmap -sS in its default aggressive modes.
+# flags:S,18 = within the SYN+ACK mask (0x12 hex = 18), SYN set and ACK clear, so
+# SYN-ACK replies from our servers do not count toward the threshold.
+alert tcp $EXTERNAL_NET any -> $HOME_NET any (msg:"NIDS: TCP SYN port scan"; flags:S,18; detection_filter:track by_src, count 20, seconds 5; classtype:attempted-recon; sid:1000003; rev:1;)
+
+# NULL scan: packet with no TCP flags at all (nmap -sN). A normal stack
+# never sends this. Mask 63 = all 6 common flag bits checked.
+alert tcp $EXTERNAL_NET any -> $HOME_NET any (msg:"NIDS: TCP NULL scan (no flags set)"; flags:0,63; classtype:attempted-recon; sid:1000004; rev:1;)
+
+# FIN scan: lone FIN packet (nmap -sF). Mask 17 (FIN|ACK) so the normal
+# FIN-ACK that closes every TCP connection does not match.
+alert tcp $EXTERNAL_NET any -> $HOME_NET any (msg:"NIDS: TCP FIN scan"; flags:F,17; classtype:attempted-recon; sid:1000005; rev:1;)
+
+# Xmas scan: FIN+PSH+URG together (nmap -sX). Mask 63 (all six bits) so
+# ACK must also be clear.
+alert tcp $EXTERNAL_NET any -> $HOME_NET any (msg:"NIDS: TCP Xmas scan (FIN+PSH+URG)"; flags:FPU,63; classtype:attempted-recon; sid:1000006; rev:1;)
+
+#------------------------------------------------------------------------
+# 3. Brute force: repeated connection attempts to login services
+#------------------------------------------------------------------------
+
+# SSH brute force: 5+ new connections to port 22 from one source in 60s.
+# Legitimate users do not open SSH sessions at this rate.
+alert tcp $EXTERNAL_NET any -> $HOME_NET 22 (msg:"NIDS: Possible SSH brute force (repeated connections)"; flags:S,18; detection_filter:track by_src, count 5, seconds 60; classtype:attempted-dos; sid:1000007; rev:1;)
+
+# FTP brute force: same idea on port 21.
+alert tcp $EXTERNAL_NET any -> $HOME_NET 21 (msg:"NIDS: Possible FTP brute force (repeated connections)"; flags:S,18; detection_filter:track by_src, count 5, seconds 60; classtype:attempted-dos; sid:1000008; rev:1;)
+
+# Telnet brute force: same idea on port 23.
+alert tcp $EXTERNAL_NET any -> $HOME_NET 23 (msg:"NIDS: Possible Telnet brute force (repeated connections)"; flags:S,18; detection_filter:track by_src, count 5, seconds 60; classtype:attempted-dos; sid:1000009; rev:1;)
+
+#------------------------------------------------------------------------
+# 4. Suspicious payloads / web attacks
+#------------------------------------------------------------------------
+
+# Attempt to read the Unix password file (path traversal or LFI).
+alert tcp $EXTERNAL_NET any -> $HOME_NET 80 (msg:"NIDS: /etc/passwd access attempt"; content:"/etc/passwd"; nocase; classtype:attempted-admin; sid:1000010; rev:1;)
+
+# Windows command shell name in traffic (webshells, exploits).
+alert tcp $EXTERNAL_NET any -> $HOME_NET any (msg:"NIDS: Windows command shell in payload (cmd.exe)"; content:"cmd.exe"; nocase; classtype:attempted-admin; sid:1000011; rev:1;)
+
+# Basic SQL injection: UNION SELECT in an HTTP request.
+alert tcp $EXTERNAL_NET any -> $HOME_NET 80 (msg:"NIDS: SQL injection attempt (UNION SELECT)"; content:"union select"; nocase; classtype:web-application-attack; sid:1000012; rev:1;)
+
+# Basic reflected XSS probe: <script> in an HTTP request.
+alert tcp $EXTERNAL_NET any -> $HOME_NET 80 (msg:"NIDS: Cross-site scripting attempt (<script> in request)"; content:"<script>"; nocase; classtype:web-application-attack; sid:1000013; rev:1;)
+
+# NOP sled: long run of 0x90 bytes, typical of old-school buffer overflow
+# shellcode delivery.
+alert tcp $EXTERNAL_NET any -> $HOME_NET any (msg:"NIDS: NOP sled (possible shellcode)"; content:"|90 90 90 90 90 90 90 90 90 90|"; classtype:shellcode-detect; sid:1000014; rev:1;)
+
+#------------------------------------------------------------------------
+# 5. Policy / hygiene
+#------------------------------------------------------------------------
+
+# Outbound Telnet from our network: cleartext credentials on the wire.
+alert tcp $HOME_NET any -> $EXTERNAL_NET 23 (msg:"NIDS: Outbound Telnet session (cleartext protocol)"; flags:S,18; classtype:policy-violation; sid:1000015; rev:1;)
+
+# Abnormally large DNS query: possible DNS tunneling / exfiltration.
+alert udp $EXTERNAL_NET any -> $HOME_NET 53 (msg:"NIDS: Oversized DNS query (possible tunneling)"; dsize:>200; classtype:trojan-activity; sid:1000016; rev:1;)
