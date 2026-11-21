@@ -1,0 +1,21 @@
+loaded 16 rules from rules/codealpha_ids.rules
+icmp_sweep.pcap: 26 packets, 42 alerts
+port_scan.pcap: 33 packets, 10 alerts
+ssh_brute_force.pcap: 31 packets, 5 alerts
+suspicious_payloads.pcap: 26 packets, 6 alerts
+
+alerts by rule:
+  sid 1000001:  26  NIDS: ICMP echo request (possible ping sweep)
+  sid 1000002:  16  NIDS: ICMP ping sweep detected
+  sid 1000003:   6  NIDS: TCP SYN port scan
+  sid 1000004:   1  NIDS: TCP NULL scan (no flags set)
+  sid 1000005:   2  NIDS: TCP FIN scan
+  sid 1000006:   1  NIDS: TCP Xmas scan (FIN+PSH+URG)
+  sid 1000007:   4  NIDS: Possible SSH brute force (repeated connections)
+  sid 1000010:   1  NIDS: /etc/passwd access attempt
+  sid 1000011:   1  NIDS: Windows command shell in payload (cmd.exe)
+  sid 1000012:   1  NIDS: SQL injection attempt (UNION SELECT)
+  sid 1000013:   1  NIDS: Cross-site scripting attempt (<script> in request)
+  sid 1000014:   1  NIDS: NOP sled (possible shellcode)
+  sid 1000015:   1  NIDS: Outbound Telnet session (cleartext protocol)
+  sid 1000016:   1  NIDS: Oversized DNS query (possible tunneling)
