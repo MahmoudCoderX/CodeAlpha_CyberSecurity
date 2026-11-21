@@ -1,0 +1,9 @@
+[*] Demo mode: analysing 5 synthetic packets (no capture performed).
+
+#1 [11:53:24.976] TCP   192.168.1.10:51514 -> 142.250.190.78:443 len=77 flags=PA
+    payload: GET / HTTP/1.1..Host: example.com....
+#2 [11:53:24.976] TCP   142.250.190.78:443 -> 192.168.1.10:51514 len=40 flags=A
+#3 [11:53:24.976] UDP   192.168.1.10:53210 -> 8.8.8.8:53 len=40
+    payload: .4..........
+#4 [11:53:24.976] ICMP  192.168.1.10:None -> 8.8.8.8:None len=28
+#5 [11:53:24.977] TCP   10.0.0.5:44022 -> 192.168.1.10:22 len=40 flags=S
