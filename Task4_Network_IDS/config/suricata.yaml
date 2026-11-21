@@ -1,0 +1,42 @@
+#========================================================================
+# suricata.yaml - minimal Suricata configuration for the CodeAlpha NIDS task
+#
+# Trimmed config for testing the custom rule set offline or on one
+# interface. For production, edit /etc/suricata/suricata.yaml and add
+# codealpha_ids.rules to rule-files instead.
+#========================================================================
+
+%YAML 1.1
+---
+
+vars:
+  address-groups:
+    HOME_NET: "[192.168.1.0/24]"
+    EXTERNAL_NET: "!$HOME_NET"
+
+# Load only our custom rules (set default-rule-path to this repo's rules/)
+default-rule-path: ../rules
+rule-files:
+  - codealpha_ids.rules
+
+outputs:
+  # Snort-style one-line alerts -> alerts.log
+  - fast:
+      enabled: yes
+      filename: alerts.log
+      append: yes
+
+  # Structured JSON alerts (what most SIEM pipelines consume) -> eve.json
+  - eve-log:
+      enabled: yes
+      filetype: regular
+      filename: eve.json
+      types:
+        - alert
+
+# Live capture settings (used with: suricata -c suricata.yaml -i eth0)
+af-packet:
+  - interface: eth0
+    cluster-id: 99
+    cluster-type: cluster_flow
+    defrag: yes
